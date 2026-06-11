@@ -52,14 +52,14 @@ export default function Home() {
             The next-generation cloud solution for Pharma Marketing Companies, Medical Distributors, Stockists, and Medical Representatives.
           </p>
 
-          <div className="flex items-center justify-center gap-4 pt-4">
-            <Link href="/auth/login">
-              <Button size="lg" className="font-bold text-sm h-11 px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4 w-full sm:w-auto max-w-sm mx-auto sm:max-w-none">
+            <Link href="/auth/login" className="w-full sm:w-auto">
+              <Button size="lg" className="font-bold text-sm h-11 px-8 w-full sm:w-auto">
                 Enter Dashboard Demo
               </Button>
             </Link>
-            <Link href="/auth/register">
-              <Button size="lg" variant="outline" className="font-bold text-sm h-11 px-8">
+            <Link href="/auth/register" className="w-full sm:w-auto">
+              <Button size="lg" variant="outline" className="font-bold text-sm h-11 px-8 w-full sm:w-auto">
                 Request Pilot Access
               </Button>
             </Link>
