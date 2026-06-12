@@ -50,6 +50,12 @@ export default function ProductsPage() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    description: string;
+    action: () => void;
+  } | null>(null);
 
   // Form States
   const [formData, setFormData] = useState({
@@ -190,16 +196,30 @@ export default function ProductsPage() {
   };
 
   const handleDeleteClick = (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      deleteProduct(id);
-    }
+    setConfirmAction({
+      title: "Delete Product",
+      description: "Are you sure you want to delete this product? This action cannot be undone.",
+      action: () => {
+        deleteProduct(id);
+        addNotification("success", "Product Deleted", "The product was removed from the catalog.");
+        logActivity("Product Deleted", `Removed product ID: ${id}`);
+      }
+    });
+    setIsConfirmOpen(true);
   };
 
   const handleBulkDelete = () => {
-    if (confirm(`Are you sure you want to delete the ${selectedIds.length} selected products?`)) {
-      selectedIds.forEach((id) => deleteProduct(id));
-      setSelectedIds([]);
-    }
+    setConfirmAction({
+      title: "Delete Multiple Products",
+      description: `Are you sure you want to delete the ${selectedIds.length} selected products? This action cannot be undone.`,
+      action: () => {
+        selectedIds.forEach((id) => deleteProduct(id));
+        setSelectedIds([]);
+        addNotification("success", "Products Deleted", "Selected products were removed.");
+        logActivity("Bulk Delete Products", `Removed ${selectedIds.length} products`);
+      }
+    });
+    setIsConfirmOpen(true);
   };
 
   const resetForm = () => {
@@ -805,6 +825,32 @@ export default function ProductsPage() {
               <Button type="submit">Save Changes</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Custom Confirmation Dialog */}
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{confirmAction?.title || "Are you absolutely sure?"}</DialogTitle>
+            <DialogDescription>
+              {confirmAction?.description || "This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4">
+            <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                confirmAction?.action();
+                setIsConfirmOpen(false);
+              }}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

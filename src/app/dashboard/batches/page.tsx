@@ -22,12 +22,27 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function BatchesPage() {
   const { batches, updateBatch, addInventoryTransaction, logActivity, addNotification } = useStore();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{
+    title: string;
+    description: string;
+    action: () => void;
+  } | null>(null);
 
   // Filtered Batches
   const filteredBatches = useMemo(() => {
@@ -52,35 +67,40 @@ export default function BatchesPage() {
       return;
     }
 
-    if (confirm(`Move all ${qty} units of batch ${batch.batchNumber} to quarantine? This will reduce available stock to zero.`)) {
-      // Update batch quantity to 0
-      updateBatch(batch.id, {
-        availableQuantity: 0,
-        status: "Expired"
-      });
+    setConfirmAction({
+      title: "Quarantine Batch",
+      description: `Are you sure you want to move all ${qty} units of batch ${batch.batchNumber} to quarantine? This will reduce available stock to zero.`,
+      action: () => {
+        // Update batch quantity to 0
+        updateBatch(batch.id, {
+          availableQuantity: 0,
+          status: "Expired"
+        });
 
-      // Log stock adjustment transaction
-      addInventoryTransaction({
-        type: "Stock Adjustment",
-        productId: batch.productId,
-        productName: batch.productName,
-        batchNumber: batch.batchNumber,
-        quantity: -qty,
-        sourceWarehouse: "Warehouse Alpha (Main)",
-        referenceNumber: `QAR-${Date.now().toString().substring(8)}`,
-        remarks: `Quarantined & Discarded expired batch ${batch.batchNumber}`
-      });
+        // Log stock adjustment transaction
+        addInventoryTransaction({
+          type: "Stock Adjustment",
+          productId: batch.productId,
+          productName: batch.productName,
+          batchNumber: batch.batchNumber,
+          quantity: -qty,
+          sourceWarehouse: "Warehouse Alpha (Main)",
+          referenceNumber: `QAR-${Date.now().toString().substring(8)}`,
+          remarks: `Quarantined & Discarded expired batch ${batch.batchNumber}`
+        });
 
-      addNotification(
-        "error",
-        "Stock Quarantined",
-        `Batch ${batch.batchNumber} (${qty} units) moved to quarantine depot.`
-      );
-      logActivity(
-        "Stock Quarantined",
-        `Quarantined ${qty} units of ${batch.productName} (Batch: ${batch.batchNumber})`
-      );
-    }
+        addNotification(
+          "error",
+          "Stock Quarantined",
+          `Batch ${batch.batchNumber} (${qty} units) moved to quarantine depot.`
+        );
+        logActivity(
+          "Stock Quarantined",
+          `Quarantined ${qty} units of ${batch.productName} (Batch: ${batch.batchNumber})`
+        );
+      }
+    });
+    setIsConfirmOpen(true);
   };
 
   return (
@@ -261,6 +281,32 @@ export default function BatchesPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Custom Confirmation Dialog */}
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{confirmAction?.title || "Are you absolutely sure?"}</DialogTitle>
+            <DialogDescription>
+              {confirmAction?.description || "This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 pt-4">
+            <Button variant="outline" onClick={() => setIsConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                confirmAction?.action();
+                setIsConfirmOpen(false);
+              }}
+            >
+              Confirm
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
